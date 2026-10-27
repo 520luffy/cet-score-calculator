@@ -618,7 +618,7 @@
                                 range: "总体水平",
                                 totalCount: 1,
                                 pointsPerItem: 106.5,
-                                userCorrect: 0.75, // 默认良好档位 75%
+                                userCorrect: 0, // 初始分数为0
                                 type: "slider"
                             }
                         ]
@@ -637,21 +637,21 @@
                                 range: "第 1 - 7 题 (3篇)",
                                 totalCount: 7,
                                 pointsPerItem: 7.1,
-                                userCorrect: 5
+                                userCorrect: 0
                             },
                             {
                                 name: "长对话 (Long Conversations)",
                                 range: "第 8 - 15 题 (2篇)",
                                 totalCount: 8,
                                 pointsPerItem: 7.1,
-                                userCorrect: 6
+                                userCorrect: 0
                             },
                             {
                                 name: "听力篇章 (Passages)",
                                 range: "第 16 - 25 题 (3篇)",
                                 totalCount: 10,
                                 pointsPerItem: 14.2, // 关键高分项
-                                userCorrect: 6
+                                userCorrect: 0
                             }
                         ]
                     },
@@ -669,21 +669,21 @@
                                 range: "第 26 - 35 题",
                                 totalCount: 10,
                                 pointsPerItem: 3.55,
-                                userCorrect: 6
+                                userCorrect: 0
                             },
                             {
                                 name: "长篇阅读 / 段落匹配 (Matching)",
                                 range: "第 36 - 45 题",
                                 totalCount: 10,
                                 pointsPerItem: 7.1,
-                                userCorrect: 8
+                                userCorrect: 0
                             },
                             {
                                 name: "仔细阅读 (Reading in Depth)",
                                 range: "第 46 - 55 题 (2篇)",
                                 totalCount: 10,
                                 pointsPerItem: 14.2, // 关键核心得分项
-                                userCorrect: 8
+                                userCorrect: 0
                             }
                         ]
                     },
@@ -701,7 +701,7 @@
                                 range: "总体水平",
                                 totalCount: 1,
                                 pointsPerItem: 106.5,
-                                userCorrect: 0.75, // 默认良好档位 75%
+                                userCorrect: 0,
                                 type: "slider"
                             }
                         ]
@@ -727,7 +727,7 @@
                                 range: "总体水平",
                                 totalCount: 1,
                                 pointsPerItem: 106.5,
-                                userCorrect: 0.72,
+                                userCorrect: 0,
                                 type: "slider"
                             }
                         ]
@@ -746,21 +746,21 @@
                                 range: "第 1 - 8 题 (2篇)",
                                 totalCount: 8,
                                 pointsPerItem: 7.1,
-                                userCorrect: 5
+                                userCorrect: 0
                             },
                             {
                                 name: "听力篇章 (Passages)",
                                 range: "第 9 - 15 题 (2篇)",
                                 totalCount: 7,
                                 pointsPerItem: 7.1,
-                                userCorrect: 4
+                                userCorrect: 0
                             },
                             {
                                 name: "讲话 / 报道 / 讲座 (Lectures)",
                                 range: "第 16 - 25 题 (3篇)",
                                 totalCount: 10,
                                 pointsPerItem: 14.2, // 关键大分题
-                                userCorrect: 5
+                                userCorrect: 0
                             }
                         ]
                     },
@@ -778,21 +778,21 @@
                                 range: "第 26 - 35 题",
                                 totalCount: 10,
                                 pointsPerItem: 3.55,
-                                userCorrect: 5
+                                userCorrect: 0
                             },
                             {
                                 name: "长篇阅读 / 段落匹配 (Matching)",
                                 range: "第 36 - 45 题",
                                 totalCount: 10,
                                 pointsPerItem: 7.1,
-                                userCorrect: 7
+                                userCorrect: 0
                             },
                             {
                                 name: "仔细阅读 (Reading in Depth)",
                                 range: "第 46 - 55 题 (2篇)",
                                 totalCount: 10,
                                 pointsPerItem: 14.2, // 六级核心分水岭
-                                userCorrect: 7
+                                userCorrect: 0
                             }
                         ]
                     },
@@ -810,7 +810,7 @@
                                 range: "总体水平",
                                 totalCount: 1,
                                 pointsPerItem: 106.5,
-                                userCorrect: 0.72,
+                                userCorrect: 0,
                                 type: "slider"
                             }
                         ]
@@ -1282,14 +1282,16 @@
             showToast(mode === 'zero' ? "已全部清空重置为0分" : "已一键设为710满分状态");
         }
 
-        // LocalStorage Save & Load
+        // LocalStorage Save & Load (v3 clean start)
+        const STORAGE_KEY = 'cet_calculator_state_v3';
+
         function saveData() {
             try {
                 const payload = {
                     CET4: examConfigs.CET4.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
                     CET6: examConfigs.CET6.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
                 };
-                localStorage.setItem('cet_calculator_state', JSON.stringify(payload));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
             } catch (e) {
                 console.warn('Storage save failed:', e);
             }
@@ -1297,7 +1299,7 @@
 
         function loadStoredData() {
             try {
-                const stored = localStorage.getItem('cet_calculator_state');
+                const stored = localStorage.getItem(STORAGE_KEY);
                 if (!stored) return;
                 const parsed = JSON.parse(stored);
                 ['CET4', 'CET6'].forEach(exKey => {
