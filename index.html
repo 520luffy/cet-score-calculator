@@ -122,7 +122,7 @@
             </div>
 
             <!-- Header Controls: CET-4/6 Switch + Tools -->
-            <div class="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+            <div class="flex items-center justify-between md:justify-end gap-2.5 sm:gap-3 w-full md:w-auto flex-wrap">
                 <!-- Switcher Pills -->
                 <div class="flex items-center bg-slate-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl backdrop-blur-md border border-slate-300/40 dark:border-white/5">
                     <button onclick="switchExamType('CET4')" id="btn-cet4" class="px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm bg-white dark:bg-blue-600 text-blue-600 dark:text-white">
@@ -132,6 +132,19 @@
                         英语六级 (CET-6)
                     </button>
                 </div>
+
+                <!-- Standards Modal Button -->
+                <button onclick="openModal('standards-modal')" class="px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 active:scale-95 transition-all shadow-sm" title="查看大学英语四六级评分标准与分数对照表">
+                    <i class="fa-solid fa-table-list text-blue-500"></i>
+                    <span>评分标准</span>
+                </button>
+
+                <!-- Official NEEA Link Button -->
+                <a href="https://cet.neea.edu.cn/html1/folder/19081/5124-1.htm" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 flex items-center space-x-1.5 text-xs font-bold text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:scale-105 active:scale-95 transition-all shadow-sm" title="直达中国教育考试网官方分数解释">
+                    <i class="fa-solid fa-award text-blue-600"></i>
+                    <span class="hidden sm:inline">中国教育考试网</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
+                </a>
 
                 <!-- Theme Toggle Button -->
                 <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-amber-300 hover:scale-105 active:scale-95 transition-all shadow-sm" title="切换深色/浅色模式">
@@ -288,14 +301,23 @@
         </section>
 
         <!-- Footer -->
-        <footer class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 space-y-2">
+        <footer class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 space-y-2.5">
             <p>大学英语四六级考试算分模型 | 基于全国考纲百分比赋分与官方常模转换原理设计</p>
-            <div class="flex items-center justify-center space-x-4 text-[11px]">
-                <a href="javascript:void(0)" onclick="openModal('formula-modal')" class="hover:text-blue-500 underline">算分算法说明</a>
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[11px]">
+                <a href="javascript:void(0)" onclick="openModal('standards-modal')" class="hover:text-blue-500 dark:hover:text-blue-400 underline font-medium flex items-center">
+                    <i class="fa-solid fa-table-list mr-1 text-blue-500"></i>评分标准与分数对照表
+                </a>
                 <span>&bull;</span>
-                <a href="javascript:void(0)" onclick="openModal('grades-modal')" class="hover:text-blue-500 underline">写作翻译评分档位标准</a>
+                <a href="https://cet.neea.edu.cn/html1/folder/19081/5124-1.htm" target="_blank" rel="noopener noreferrer" class="hover:text-blue-500 dark:hover:text-blue-400 underline font-medium flex items-center text-blue-600 dark:text-blue-400">
+                    <i class="fa-solid fa-award mr-1"></i>中国教育考试网 (官方分数解释)
+                    <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[9px]"></i>
+                </a>
                 <span>&bull;</span>
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-blue-500 underline">GitHub 开源仓库</a>
+                <a href="javascript:void(0)" onclick="openModal('formula-modal')" class="hover:text-blue-500 underline">常模算分公式说明</a>
+                <span>&bull;</span>
+                <a href="javascript:void(0)" onclick="openModal('grades-modal')" class="hover:text-blue-500 underline">写作翻译五档评分细则</a>
+                <span>&bull;</span>
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-blue-500 underline">GitHub 仓库</a>
             </div>
         </footer>
 
@@ -390,6 +412,183 @@
             <div class="pt-2 text-right">
                 <button onclick="closeModal('grades-modal')" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20">
                     明白了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: 大学英语四六级评分标准与分数对照表 (中国教育考试网官方权威来源) -->
+    <div id="standards-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-3xl w-full rounded-3xl p-5 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-table-list"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="font-extrabold text-slate-900 dark:text-white text-base sm:text-lg">大学英语四六级评分标准与分数对照表</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">采用常模参照计分，总分710分，不设及格线，分数对应常模群体百分位</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('standards-modal')" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Official Authority Badge Card -->
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 dark:from-slate-800/80 dark:via-blue-950/40 dark:to-slate-800/80 border border-blue-200/70 dark:border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-2.5 text-xs text-blue-900 dark:text-blue-300 font-medium">
+                    <i class="fa-solid fa-shield-halved text-blue-600 text-base"></i>
+                    <span>数据来源认证：<strong>教育部教育考试院 &bull; 中国教育考试网 (cet.neea.edu.cn)</strong></span>
+                </div>
+                <a href="https://cet.neea.edu.cn/html1/folder/19081/5124-1.htm" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm flex items-center space-x-1.5 flex-shrink-0">
+                    <span>访问官网原文</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+            </div>
+
+            <!-- Section 1: 考试结构与分值比例 -->
+            <div class="space-y-2.5">
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>一、考试结构与单项分值比例
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40 space-y-1">
+                        <div class="font-bold text-indigo-900 dark:text-indigo-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-headphones mr-1 text-indigo-500"></i> 听力部分</span>
+                            <span class="text-indigo-600 font-extrabold">35%</span>
+                        </div>
+                        <div class="text-slate-600 dark:text-slate-400">报道满分：<strong class="text-slate-900 dark:text-white">249 分</strong></div>
+                        <div class="text-[11px] text-slate-400">短篇新闻/长对话/篇章讲座</div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-violet-50/70 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 space-y-1">
+                        <div class="font-bold text-violet-900 dark:text-violet-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-book-open mr-1 text-violet-500"></i> 阅读部分</span>
+                            <span class="text-violet-600 font-extrabold">35%</span>
+                        </div>
+                        <div class="text-slate-600 dark:text-slate-400">报道满分：<strong class="text-slate-900 dark:text-white">249 分</strong></div>
+                        <div class="text-[11px] text-slate-400">词汇选词/长篇匹配/仔细阅读</div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/60 dark:border-sky-800/40 space-y-1">
+                        <div class="font-bold text-sky-900 dark:text-sky-300 flex items-center justify-between">
+                            <span><i class="fa-solid fa-pen-nib mr-1 text-sky-500"></i> 翻译 + 写作</span>
+                            <span class="text-sky-600 font-extrabold">30%</span>
+                        </div>
+                        <div class="text-slate-600 dark:text-slate-400">报道满分：<strong class="text-slate-900 dark:text-white">212 分</strong></div>
+                        <div class="text-[11px] text-slate-400">写作 15% (106分) + 翻译 15% (106分)</div>
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 pl-1">注：四六级各单项报道分之和即为报道总分（249 + 249 + 212 = 710 分）。</p>
+            </div>
+
+            <!-- Section 2: 官方常模百分位对照 (四级示例) -->
+            <div class="space-y-2.5">
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span>二、常模百分位对照（中国教育考试网四级官方示例）
+                </h4>
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="p-3">报道总分</th>
+                                <th class="p-3">常模群体百分位</th>
+                                <th class="p-3">听力单项(例)</th>
+                                <th class="p-3">阅读单项(例)</th>
+                                <th class="p-3">翻译+写作(例)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-slate-900 dark:text-white">450 分</td>
+                                <td class="p-3 text-blue-600 dark:text-blue-400 font-bold">25%</td>
+                                <td class="p-3">140 分 &rarr; 12%</td>
+                                <td class="p-3">140 分 &rarr; 17%</td>
+                                <td class="p-3">127 分 &rarr; 16%</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-slate-900 dark:text-white">500 分</td>
+                                <td class="p-3 text-blue-600 dark:text-blue-400 font-bold">44% ~ 55%</td>
+                                <td class="p-3 text-slate-400">-</td>
+                                <td class="p-3 text-slate-400">-</td>
+                                <td class="p-3 text-slate-400">-</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-slate-900 dark:text-white">600 分</td>
+                                <td class="p-3 text-emerald-600 dark:text-emerald-400 font-bold">90% (前 10%)</td>
+                                <td class="p-3 text-slate-400">-</td>
+                                <td class="p-3 text-slate-400">-</td>
+                                <td class="p-3 text-slate-400">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/60 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                    <div><i class="fa-solid fa-circle-info text-blue-500 mr-1.5"></i><strong>官方含义解读：</strong></div>
+                    <ul class="list-disc list-inside space-y-0.5 text-slate-500 dark:text-slate-400 pl-1 text-[11px]">
+                        <li><strong>四级 450 分</strong>：表示该考生的英语成绩优于全国常模群体中 <strong>25%</strong> 的考生，但劣于 75% 的人。</li>
+                        <li><strong>四级 500 分</strong>：表示考生至少优于常模中 <strong>44%</strong> 的人，但不超过 55% 的人（即处于全国中游水平）。</li>
+                        <li><strong>六级 550 分</strong>：常模百分位约为 <strong>76%</strong>，代表超越全国 76% 考生（保研高分档）。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Section 3: 能力等级参考 (社会通用标准) -->
+            <div class="space-y-2.5">
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>三、能力等级参考（社会与高校通用认可标准）
+                </h4>
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                            <tr>
+                                <th class="p-3">报道分区间</th>
+                                <th class="p-3">四级百分位</th>
+                                <th class="p-3">六级百分位</th>
+                                <th class="p-3">能力等级与实际应用描述</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200/70 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-amber-600 dark:text-amber-400">600 ~ 710 分</td>
+                                <td class="p-3 font-semibold">前 5%</td>
+                                <td class="p-3 font-semibold">前 3%</td>
+                                <td class="p-3"><strong class="text-amber-600 dark:text-amber-400">极佳</strong>：可流畅进行专业学术交流、高阶涉外商务谈判及英文论著阅读撰写。</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-emerald-600 dark:text-emerald-400">500 ~ 599 分</td>
+                                <td class="p-3 font-semibold">前 15% ~ 5%</td>
+                                <td class="p-3 font-semibold">前 10% ~ 3%</td>
+                                <td class="p-3"><strong class="text-emerald-600 dark:text-emerald-400">良好</strong>：日常英文对话无阻，胜任外企及大型跨国企业日常工作环境，名校保研稳健。</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-blue-600 dark:text-blue-400">425 ~ 499 分</td>
+                                <td class="p-3 font-semibold">前 50% ~ 15%</td>
+                                <td class="p-3 font-semibold">前 40% ~ 10%</td>
+                                <td class="p-3"><strong class="text-blue-600 dark:text-blue-400">达标</strong>：达到国家通用公认合格线（425分），满足学士学位授予与硕士研究生报名门槛。</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                <td class="p-3 font-bold text-rose-500 dark:text-rose-400">220 ~ 424 分</td>
+                                <td class="p-3 font-semibold">后 50%</td>
+                                <td class="p-3 font-semibold">后 60%</td>
+                                <td class="p-3"><strong class="text-rose-500 dark:text-rose-400">基础</strong>：掌握初级词汇与语法基础，未达及格线；建议重点主攻仔细阅读与听力核心考点。</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer Action -->
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <a href="https://cet.neea.edu.cn/html1/folder/19081/5124-1.htm" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+                    <i class="fa-solid fa-link mr-1"></i> https://cet.neea.edu.cn/html1/folder/19081/5124-1.htm
+                </a>
+                <button onclick="closeModal('standards-modal')" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20">
+                    关闭并返回算分
                 </button>
             </div>
         </div>
