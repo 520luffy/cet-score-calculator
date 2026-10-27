@@ -324,8 +324,8 @@
     </div>
 
     <!-- Modal 1: 算分机制与常模公式说明 -->
-    <div id="formula-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
-        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+    <div id="formula-modal" onclick="if(event.target === this) closeModal('formula-modal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 cursor-pointer">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto cursor-default">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2.5">
                     <i class="fa-solid fa-square-root-variable text-blue-600 text-lg"></i>
@@ -374,8 +374,8 @@
     </div>
 
     <!-- Modal 2: 写作与翻译评分标准说明 -->
-    <div id="grades-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
-        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+    <div id="grades-modal" onclick="if(event.target === this) closeModal('grades-modal')" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 cursor-pointer">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto cursor-default">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-2.5">
                     <i class="fa-solid fa-pen-fancy text-indigo-600 text-lg"></i>
@@ -418,8 +418,8 @@
     </div>
 
     <!-- Modal 3: 大学英语四六级评分标准与分数对照表 (中国教育考试网官方权威来源) -->
-    <div id="standards-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
-        <div class="glass-card bg-white dark:bg-slate-900 max-w-3xl w-full rounded-3xl p-5 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto">
+    <div id="standards-modal" onclick="if(event.target === this) closeModal('standards-modal')" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200 cursor-pointer">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-3xl w-full rounded-3xl p-5 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[92vh] overflow-y-auto cursor-default">
             <!-- Modal Header -->
             <div class="flex items-center justify-between pb-3.5 border-b border-slate-200 dark:border-slate-800">
                 <div class="flex items-center space-x-3">
@@ -1353,6 +1353,15 @@
 
         window.onload = function() {
             initApp();
+
+            // 支持键盘 ESC 键一键关闭弹窗
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal('formula-modal');
+                    closeModal('grades-modal');
+                    closeModal('standards-modal');
+                }
+            });
         };
     </script>
 </body>
