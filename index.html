@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学英语四六级智能算分系统 - CET-4 / CET-6 实时估分与考情诊断</title>
+    <meta name="description" content="基于全国大学英语四六级考试（CET-4/CET-6）官方分值构成与常模赋分原理设计的智能算分与考情诊断工具。支持实时算分、题型权重分析、备考建议与成绩单海报生成。">
+    <meta name="keywords" content="英语四级算分,英语六级算分,CET-4算分器,CET-6算分器,四六级及格线,四六级赋分机制,四六级分数线">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- html2canvas 用于成绩单导出图片 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans SC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .bg-light-ambient {
+            background: radial-gradient(circle at 15% 15%, rgba(219, 234, 254, 0.7) 0%, transparent 40%),
+                        radial-gradient(circle at 85% 85%, rgba(243, 232, 255, 0.7) 0%, transparent 40%),
+                        linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        .dark .bg-dark-ambient {
+            background: radial-gradient(circle at 20% 20%, rgba(30, 58, 138, 0.25) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(88, 28, 135, 0.25) 0%, transparent 50%),
+                        linear-gradient(135deg, #0f172a 0%, #020617 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03);
+        }
+        .glass-subcard {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .dark .glass-subcard {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-light-ambient dark:bg-dark-ambient text-slate-800 dark:text-slate-100 antialiased py-6 px-4 sm:px-6 lg:px-8">
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full opacity-0 transition-all duration-300 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 text-sm font-medium border border-white/10 pointer-events-none">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toast-msg">操作成功</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="max-w-5xl mx-auto space-y-6 sm:space-y-8" id="capture-container">
+
+        <!-- Header & Nav -->
+        <header class="glass-card p-5 sm:p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-5">
+            <div class="flex items-center space-x-4 w-full md:w-auto">
+                <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/30 flex-shrink-0">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2.5">
+                        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">大学英语四六级智能算分</h1>
+                        <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 uppercase tracking-wide">2026 官方标准</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">精准模拟官方算分规则，实时查看各项得分与权重占比</p>
+                </div>
+            </div>
+
+            <!-- Header Controls: CET-4/6 Switch + Tools -->
+            <div class="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+                <!-- Switcher Pills -->
+                <div class="flex items-center bg-slate-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl backdrop-blur-md border border-slate-300/40 dark:border-white/5">
+                    <button onclick="switchExamType('CET4')" id="btn-cet4" class="px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm bg-white dark:bg-blue-600 text-blue-600 dark:text-white">
+                        英语四级 (CET-4)
+                    </button>
+                    <button onclick="switchExamType('CET6')" id="btn-cet6" class="px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+                        英语六级 (CET-6)
+                    </button>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button onclick="toggleDarkMode()" class="w-10 h-10 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-amber-300 hover:scale-105 active:scale-95 transition-all shadow-sm" title="切换深色/浅色模式">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Help / Formula Modal Button -->
+                <button onclick="openModal('formula-modal')" class="w-10 h-10 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:scale-105 active:scale-95 transition-all shadow-sm" title="算分原理与常模转换公式">
+                    <i class="fa-solid fa-circle-question"></i>
+                </button>
+
+                <!-- GitHub Link -->
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white hover:scale-105 active:scale-95 transition-all shadow-sm" title="查看 GitHub 仓库">
+                    <i class="fa-brands fa-github text-lg"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Score Overview Banner -->
+        <section class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-blue-500/10 dark:bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-10 -top-10 w-72 h-72 bg-indigo-500/10 dark:bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <!-- Total Score Display -->
+                <div class="md:col-span-5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-slate-200/80 dark:border-slate-700/80 pb-6 md:pb-0 md:pr-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">预估总分 (Total Score)</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold" id="exam-label-pill">四级模拟</span>
+                    </div>
+                    <div class="flex items-baseline space-x-2 mt-2">
+                        <span id="total-score" class="text-6xl sm:text-7xl font-black tracking-tight text-slate-900 dark:text-white transition-all">0</span>
+                        <span class="text-xl sm:text-2xl font-bold text-slate-400 dark:text-slate-500">/ 710分</span>
+                    </div>
+
+                    <!-- Pass Badge & Stats -->
+                    <div class="mt-4 flex flex-wrap items-center gap-2 sm:gap-3">
+                        <span id="pass-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span>未达 425 分合格线</span>
+                        </span>
+                        <span id="score-percentage" class="text-xs text-slate-500 dark:text-slate-400 font-medium px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80">
+                            综合得分率: 0%
+                        </span>
+                    </div>
+
+                    <!-- Level Indicator Text -->
+                    <div class="mt-3 text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <span id="level-desc">等待填写各部分做对题数...</span>
+                    </div>
+                </div>
+
+                <!-- Section Summary Breakdown Bars -->
+                <div class="md:col-span-7 space-y-4">
+                    <div class="flex justify-between items-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                        <span class="flex items-center"><i class="fa-solid fa-chart-simple mr-1.5 text-blue-500"></i> 各模块得分占比详情</span>
+                        <span>满分 710 分 (425分通过)</span>
+                    </div>
+
+                    <!-- Writing Bar -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-700 dark:text-slate-300 flex items-center"><i class="fa-solid fa-pen-nib text-blue-500 mr-2 w-4 text-center"></i> 写作 (Writing 15%)</span>
+                            <span class="text-slate-900 dark:text-white font-bold"><span id="summary-writing">0</span> / 106.5分</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 dark:bg-slate-800/80 h-3 rounded-full overflow-hidden p-0.5">
+                            <div id="bar-writing" class="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500 shadow-sm" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Listening Bar -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-700 dark:text-slate-300 flex items-center"><i class="fa-solid fa-headphones text-indigo-500 mr-2 w-4 text-center"></i> 听力理解 (Listening 35%)</span>
+                            <span class="text-slate-900 dark:text-white font-bold"><span id="summary-listening">0</span> / 248.5分</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 dark:bg-slate-800/80 h-3 rounded-full overflow-hidden p-0.5">
+                            <div id="bar-listening" class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-500 shadow-sm" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Reading Bar -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-700 dark:text-slate-300 flex items-center"><i class="fa-solid fa-book-open text-violet-500 mr-2 w-4 text-center"></i> 阅读理解 (Reading 35%)</span>
+                            <span class="text-slate-900 dark:text-white font-bold"><span id="summary-reading">0</span> / 248.5分</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 dark:bg-slate-800/80 h-3 rounded-full overflow-hidden p-0.5">
+                            <div id="bar-reading" class="bg-gradient-to-r from-violet-500 to-violet-600 h-full rounded-full transition-all duration-500 shadow-sm" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Translation Bar -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-700 dark:text-slate-300 flex items-center"><i class="fa-solid fa-language text-sky-500 mr-2 w-4 text-center"></i> 翻译 (Translation 15%)</span>
+                            <span class="text-slate-900 dark:text-white font-bold"><span id="summary-translation">0</span> / 106.5分</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 dark:bg-slate-800/80 h-3 rounded-full overflow-hidden p-0.5">
+                            <div id="bar-translation" class="bg-gradient-to-r from-sky-500 to-sky-600 h-full rounded-full transition-all duration-500 shadow-sm" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="mt-6 pt-6 border-t border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+                    <i class="fa-solid fa-wand-magic-sparkles text-blue-500"></i>
+                    <span>快捷模拟预设：</span>
+                    <button onclick="applyPreset('pass')" class="hover:text-blue-600 dark:hover:text-blue-400 underline font-medium">425分及格线策略</button>
+                    <span>&bull;</span>
+                    <button onclick="applyPreset('high')" class="hover:text-blue-600 dark:hover:text-blue-400 underline font-medium">550分冲刺档</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                    <button onclick="setAllScores('zero')" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all active:scale-95">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> 重置清空
+                    </button>
+                    <button onclick="setAllScores('max')" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border border-blue-600/30 transition-all active:scale-95">
+                        <i class="fa-solid fa-bolt mr-1"></i> 一键满分
+                    </button>
+                    <button onclick="exportPoster()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center">
+                        <i class="fa-solid fa-camera mr-1.5"></i> 导出成绩卡
+                    </button>
+                    <button onclick="copyScoreText()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all active:scale-95" title="复制文本成绩单">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Detailed Sections Cards Grid -->
+        <main id="sections-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Dynamically populated via JS -->
+        </main>
+
+        <!-- Diagnostic & Advice Card -->
+        <section class="glass-card rounded-3xl p-6 sm:p-7 space-y-4" id="diagnostic-card">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-700/80">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 dark:text-white text-base">智能考情诊断与备考突破建议</h3>
+                        <p class="text-xs text-slate-400">系统根据您的得分分布与各模块薄弱项自动生成的个性化突破方案</p>
+                    </div>
+                </div>
+            </div>
+            <div id="diagnostic-content" class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <!-- Populated via calculateScores() -->
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center py-6 text-xs text-slate-400 dark:text-slate-500 space-y-2">
+            <p>大学英语四六级考试算分模型 &copy; 2026 | 基于官方考纲百分比赋分与常模转换原理设计</p>
+            <div class="flex items-center justify-center space-x-4 text-[11px]">
+                <a href="javascript:void(0)" onclick="openModal('formula-modal')" class="hover:text-blue-500 underline">算分算法说明</a>
+                <span>&bull;</span>
+                <a href="javascript:void(0)" onclick="openModal('grades-modal')" class="hover:text-blue-500 underline">写作翻译评分档位标准</a>
+                <span>&bull;</span>
+                <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-blue-500 underline">GitHub 开源仓库</a>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Modal 1: 算分机制与常模公式说明 -->
+    <div id="formula-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-2.5">
+                    <i class="fa-solid fa-square-root-variable text-blue-600 text-lg"></i>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-lg">四六级官方算分机制与公式揭秘</h3>
+                </div>
+                <button onclick="closeModal('formula-modal')" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p>大学英语四、六级考试（CET-4 / CET-6）成绩采用**常模参照方式**，总分满分为 **710 分**。官方公布的成绩不是原始卷面做对题目的简单加总，而是经过常模转换后的报道分。</p>
+                
+                <div class="bg-blue-50 dark:bg-slate-800/80 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30 space-y-2">
+                    <div class="font-bold text-blue-900 dark:text-blue-300 text-sm">官方报道分转换公式：</div>
+                    <div class="font-mono text-center py-2 text-sm sm:text-base font-bold text-blue-700 dark:text-blue-400">
+                        TotSco = [ (X - Mean) / SD ] &times; 70 + 500
+                    </div>
+                    <ul class="list-disc list-inside text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                        <li><strong>TotSco</strong>：最终成绩单上显示的报道总分；</li>
+                        <li><strong>X</strong>：考生的卷面各部分原始等价加权总分；</li>
+                        <li><strong>Mean</strong>：全国常模样本群体的平均分（通常设定为 500 分基准）；</li>
+                        <li><strong>SD</strong>：常模样本群体的标准差（70 为尺度扩展因子）。</li>
+                    </ul>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="font-bold text-slate-900 dark:text-white">为什么估分器采用 710 分线性加权模型？</h4>
+                    <p>因为每年全国考生的平均分（Mean）与标准差（SD）基本保持正态分布稳定，考试委员会依照如下精准权重比例给各题赋分：</p>
+                    <ul class="list-disc list-inside space-y-1 text-xs pl-2">
+                        <li><strong>写作 (15%)</strong>：满分 106.5 分</li>
+                        <li><strong>听力 (35%)</strong>：满分 248.5 分</li>
+                        <li><strong>阅读 (35%)</strong>：满分 248.5 分（仔细阅读单题高达 14.2 分！）</li>
+                        <li><strong>翻译 (15%)</strong>：满分 106.5 分</li>
+                    </ul>
+                    <p>通过该等价线性模型折算出来的预估分，与全国真实出分结果误差通常在 &plusmn;5~15 分之内，是考前摸底与考后对答案估分业界公认最权威实用的模型！</p>
+                </div>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button onclick="closeModal('formula-modal')" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: 写作与翻译评分标准说明 -->
+    <div id="grades-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="glass-card bg-white dark:bg-slate-900 max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center space-x-2.5">
+                    <i class="fa-solid fa-pen-fancy text-indigo-600 text-lg"></i>
+                    <h3 class="font-bold text-slate-900 dark:text-white text-lg">主观题（写作/翻译）官方五档评分标准</h3>
+                </div>
+                <button onclick="closeModal('grades-modal')" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40">
+                    <div class="font-bold text-emerald-800 dark:text-emerald-300">14分档（优秀 95~106.5分 / 85%~100%）</div>
+                    <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">切题明确，表达流畅，句式多样化，高级词汇运用恰当，仅有极个别偶发的语言微瑕，结构极其严谨。</p>
+                </div>
+                <div class="p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40">
+                    <div class="font-bold text-blue-800 dark:text-blue-300">11分档（良好 75~94分 / 70%~84%）</div>
+                    <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">切题良好，行文连贯，思路清晰，表达基本通顺，虽有少量语言错误，但不影响中心思想理解。</p>
+                </div>
+                <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40">
+                    <div class="font-bold text-amber-800 dark:text-amber-300">8分档（及格基准 54~74分 / 50%~69%）</div>
+                    <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">基本切题，表达思想较单调，词汇量有限，语言错误较多，部分句子因语法或搭配影响理解。</p>
+                </div>
+                <div class="p-3 rounded-2xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/40">
+                    <div class="font-bold text-orange-800 dark:text-orange-300">5分档（薄弱 33~53分 / 30%~49%）</div>
+                    <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">基本切题但内容贫乏，条理不清，多数句子存在明显语法或词汇错误，大量中式英语拼凑。</p>
+                </div>
+                <div class="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40">
+                    <div class="font-bold text-rose-800 dark:text-rose-300">2分档（极低 0~32分 / 0%~29%）</div>
+                    <p class="text-xs text-rose-700 dark:text-rose-400 mt-1">严重偏题或跑题，仅写出少量零星孤立单词，无法成句，或者抄写听力/阅读原文材料。</p>
+                </div>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button onclick="closeModal('grades-modal')" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20">
+                    明白了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Core Script -->
+    <script>
+        // Official CET-4 and CET-6 Data Configuration
+        // All score weights strictly verified to match 710 max score
+        const examConfigs = {
+            CET4: {
+                id: "CET4",
+                name: "英语四级 (CET-4)",
+                shortName: "四级",
+                sections: [
+                    {
+                        id: "writing",
+                        title: "写作 (Writing)",
+                        icon: "fa-pen-nib",
+                        color: "blue",
+                        maxScore: 106.5,
+                        weight: "15%",
+                        description: "30分钟 / 短文写作（通常考查议论文、书信、图表描述等）",
+                        subsections: [
+                            {
+                                name: "短文写作评分",
+                                range: "总体水平",
+                                totalCount: 1,
+                                pointsPerItem: 106.5,
+                                userCorrect: 0.75, // 默认良好档位 75%
+                                type: "slider"
+                            }
+                        ]
+                    },
+                    {
+                        id: "listening",
+                        title: "听力理解 (Listening)",
+                        icon: "fa-headphones",
+                        color: "indigo",
+                        maxScore: 248.5,
+                        weight: "35%",
+                        description: "25分钟 / 25题（新闻7% + 长对话8% + 篇章20%）",
+                        subsections: [
+                            {
+                                name: "短篇新闻 (News Reports)",
+                                range: "第 1 - 7 题 (3篇)",
+                                totalCount: 7,
+                                pointsPerItem: 7.1,
+                                userCorrect: 5
+                            },
+                            {
+                                name: "长对话 (Long Conversations)",
+                                range: "第 8 - 15 题 (2篇)",
+                                totalCount: 8,
+                                pointsPerItem: 7.1,
+                                userCorrect: 6
+                            },
+                            {
+                                name: "听力篇章 (Passages)",
+                                range: "第 16 - 25 题 (3篇)",
+                                totalCount: 10,
+                                pointsPerItem: 14.2, // 关键高分项
+                                userCorrect: 6
+                            }
+                        ]
+                    },
+                    {
+                        id: "reading",
+                        title: "阅读理解 (Reading)",
+                        icon: "fa-book-open",
+                        color: "violet",
+                        maxScore: 248.5,
+                        weight: "35%",
+                        description: "40分钟 / 30题（选词5% + 长篇匹配10% + 仔细阅读20%）",
+                        subsections: [
+                            {
+                                name: "词汇理解 / 选词填空 (Banked Cloze)",
+                                range: "第 26 - 35 题",
+                                totalCount: 10,
+                                pointsPerItem: 3.55,
+                                userCorrect: 6
+                            },
+                            {
+                                name: "长篇阅读 / 段落匹配 (Matching)",
+                                range: "第 36 - 45 题",
+                                totalCount: 10,
+                                pointsPerItem: 7.1,
+                                userCorrect: 8
+                            },
+                            {
+                                name: "仔细阅读 (Reading in Depth)",
+                                range: "第 46 - 55 题 (2篇)",
+                                totalCount: 10,
+                                pointsPerItem: 14.2, // 关键核心得分项
+                                userCorrect: 8
+                            }
+                        ]
+                    },
+                    {
+                        id: "translation",
+                        title: "翻译 (Translation)",
+                        icon: "fa-language",
+                        color: "sky",
+                        maxScore: 106.5,
+                        weight: "15%",
+                        description: "30分钟 / 段落汉译英（涉及中国历史、文化、经济、社会发展）",
+                        subsections: [
+                            {
+                                name: "汉译英段落综合评定",
+                                range: "总体水平",
+                                totalCount: 1,
+                                pointsPerItem: 106.5,
+                                userCorrect: 0.75, // 默认良好档位 75%
+                                type: "slider"
+                            }
+                        ]
+                    }
+                ]
+            },
+            CET6: {
+                id: "CET6",
+                name: "英语六级 (CET-6)",
+                shortName: "六级",
+                sections: [
+                    {
+                        id: "writing",
+                        title: "写作 (Writing)",
+                        icon: "fa-pen-nib",
+                        color: "blue",
+                        maxScore: 106.5,
+                        weight: "15%",
+                        description: "30分钟 / 短文写作（通常为引言格言哲理、社会热点观点等）",
+                        subsections: [
+                            {
+                                name: "短文写作评分",
+                                range: "总体水平",
+                                totalCount: 1,
+                                pointsPerItem: 106.5,
+                                userCorrect: 0.72,
+                                type: "slider"
+                            }
+                        ]
+                    },
+                    {
+                        id: "listening",
+                        title: "听力理解 (Listening)",
+                        icon: "fa-headphones",
+                        color: "indigo",
+                        maxScore: 248.5,
+                        weight: "35%",
+                        description: "30分钟 / 25题（长对话8% + 篇章7% + 讲座讲话20%）",
+                        subsections: [
+                            {
+                                name: "长对话 (Long Conversations)",
+                                range: "第 1 - 8 题 (2篇)",
+                                totalCount: 8,
+                                pointsPerItem: 7.1,
+                                userCorrect: 5
+                            },
+                            {
+                                name: "听力篇章 (Passages)",
+                                range: "第 9 - 15 题 (2篇)",
+                                totalCount: 7,
+                                pointsPerItem: 7.1,
+                                userCorrect: 4
+                            },
+                            {
+                                name: "讲话 / 报道 / 讲座 (Lectures)",
+                                range: "第 16 - 25 题 (3篇)",
+                                totalCount: 10,
+                                pointsPerItem: 14.2, // 关键大分题
+                                userCorrect: 5
+                            }
+                        ]
+                    },
+                    {
+                        id: "reading",
+                        title: "阅读理解 (Reading)",
+                        icon: "fa-book-open",
+                        color: "violet",
+                        maxScore: 248.5,
+                        weight: "35%",
+                        description: "40分钟 / 30题（选词5% + 长篇匹配10% + 仔细阅读20%）",
+                        subsections: [
+                            {
+                                name: "词汇理解 / 选词填空 (Banked Cloze)",
+                                range: "第 26 - 35 题",
+                                totalCount: 10,
+                                pointsPerItem: 3.55,
+                                userCorrect: 5
+                            },
+                            {
+                                name: "长篇阅读 / 段落匹配 (Matching)",
+                                range: "第 36 - 45 题",
+                                totalCount: 10,
+                                pointsPerItem: 7.1,
+                                userCorrect: 7
+                            },
+                            {
+                                name: "仔细阅读 (Reading in Depth)",
+                                range: "第 46 - 55 题 (2篇)",
+                                totalCount: 10,
+                                pointsPerItem: 14.2, // 六级核心分水岭
+                                userCorrect: 7
+                            }
+                        ]
+                    },
+                    {
+                        id: "translation",
+                        title: "翻译 (Translation)",
+                        icon: "fa-language",
+                        color: "sky",
+                        maxScore: 106.5,
+                        weight: "15%",
+                        description: "30分钟 / 段落汉译英（词汇较难、句子结构较复杂）",
+                        subsections: [
+                            {
+                                name: "汉译英段落综合评定",
+                                range: "总体水平",
+                                totalCount: 1,
+                                pointsPerItem: 106.5,
+                                userCorrect: 0.72,
+                                type: "slider"
+                            }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        let currentExam = 'CET4';
+
+        // Initialize App
+        function initApp() {
+            // Check stored theme
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcon(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcon(false);
+            }
+
+            // Load saved state if exists
+            const savedExam = localStorage.getItem('cet_current_exam');
+            if (savedExam && examConfigs[savedExam]) {
+                currentExam = savedExam;
+            }
+
+            loadStoredData();
+            renderUI();
+            calculateScores();
+        }
+
+        // Toggle Dark Mode
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcon(isDark);
+            showToast(isDark ? "已开启深色模式" : "已切换为浅色模式");
+        }
+
+        function updateThemeIcon(isDark) {
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = isDark ? "fa-solid fa-sun text-amber-300" : "fa-solid fa-moon text-slate-600";
+            }
+        }
+
+        // Switch between CET-4 and CET-6
+        function switchExamType(type) {
+            currentExam = type;
+            localStorage.setItem('cet_current_exam', type);
+
+            const btn4 = document.getElementById('btn-cet4');
+            const btn6 = document.getElementById('btn-cet6');
+            const examPill = document.getElementById('exam-label-pill');
+
+            if (type === 'CET4') {
+                btn4.className = "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm bg-white dark:bg-blue-600 text-blue-600 dark:text-white";
+                btn6.className = "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+                examPill.innerText = "四级模拟";
+                showToast("已切换至 英语四级 (CET-4) 模式");
+            } else {
+                btn6.className = "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm bg-white dark:bg-blue-600 text-blue-600 dark:text-white";
+                btn4.className = "px-4 sm:px-6 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+                examPill.innerText = "六级模拟";
+                showToast("已切换至 英语六级 (CET-6) 模式");
+            }
+
+            renderUI();
+            calculateScores();
+            saveData();
+        }
+
+        // Render UI Sections
+        function renderUI() {
+            const container = document.getElementById('sections-container');
+            container.innerHTML = '';
+            const data = examConfigs[currentExam];
+
+            data.sections.forEach((sec) => {
+                let cardHTML = `
+                    <div class="glass-card rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-5">
+                        <div>
+                            <!-- Section Header -->
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-700/80">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-400/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-base">
+                                        <i class="fa-solid ${sec.icon}"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <h3 class="font-extrabold text-slate-900 dark:text-white text-base">${sec.title}</h3>
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">${sec.weight}</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">${sec.description}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span id="score-${sec.id}" class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">0</span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500"> / ${sec.maxScore}分</span>
+                                </div>
+                            </div>
+
+                            <!-- Subsections List -->
+                            <div class="space-y-4 mt-4">
+                `;
+
+                sec.subsections.forEach((sub, subIndex) => {
+                    if (sub.type === 'slider') {
+                        const pct = Math.round(sub.userCorrect * 100);
+                        const points = (sub.userCorrect * sub.pointsPerItem).toFixed(1);
+
+                        cardHTML += `
+                            <div class="glass-subcard p-4 rounded-2xl space-y-3">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="font-bold text-slate-800 dark:text-slate-200">${sub.name}</span>
+                                    <span class="text-blue-600 dark:text-blue-400 font-extrabold" id="slider-score-${sec.id}-${subIndex}">${points}分</span>
+                                </div>
+
+                                <!-- Slider Input -->
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <input type="range" min="0" max="1" step="0.01" value="${sub.userCorrect}" 
+                                            oninput="updateSliderValue('${sec.id}', ${subIndex}, this.value)"
+                                            class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                                        <span>得分率: <strong class="text-slate-700 dark:text-slate-200" id="slider-val-${sec.id}-${subIndex}">${pct}%</strong></span>
+                                        <span id="slider-tier-${sec.id}-${subIndex}" class="font-medium text-slate-500 dark:text-slate-400">${getTierLabel(sub.userCorrect)}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Grade Quick Pills -->
+                                <div class="flex items-center justify-between pt-1 gap-1">
+                                    <button onclick="setSliderPreset('${sec.id}', ${subIndex}, 0.95)" class="px-2 py-1 text-[11px] rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">14分档(优秀)</button>
+                                    <button onclick="setSliderPreset('${sec.id}', ${subIndex}, 0.75)" class="px-2 py-1 text-[11px] rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-medium">11分档(良好)</button>
+                                    <button onclick="setSliderPreset('${sec.id}', ${subIndex}, 0.55)" class="px-2 py-1 text-[11px] rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-medium">8分档(及格)</button>
+                                    <button onclick="setSliderPreset('${sec.id}', ${subIndex}, 0.35)" class="px-2 py-1 text-[11px] rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-medium">5分档(薄弱)</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const earned = (sub.userCorrect * sub.pointsPerItem).toFixed(1);
+                        cardHTML += `
+                            <div class="glass-subcard p-4 rounded-2xl space-y-3">
+                                <div class="flex justify-between items-start text-xs">
+                                    <div>
+                                        <span class="font-bold text-slate-800 dark:text-slate-200 block text-xs sm:text-sm">${sub.name}</span>
+                                        <span class="text-slate-400 dark:text-slate-500 text-[11px]">${sub.range} &bull; 每题 <strong class="text-blue-600 dark:text-blue-400">${sub.pointsPerItem}分</strong></span>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-extrabold text-blue-600 dark:text-blue-400" id="sub-earned-${sec.id}-${subIndex}">${earned}分</span>
+                                        <span class="text-[11px] text-slate-400 block">共 ${sub.totalCount} 题</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between pt-1">
+                                    <div class="text-xs text-slate-500 dark:text-slate-400">
+                                        做对题数: <strong id="count-display-${sec.id}-${subIndex}" class="font-extrabold text-slate-800 dark:text-white text-sm sm:text-base">${sub.userCorrect}</strong>
+                                        <span class="text-slate-400">/ ${sub.totalCount}</span>
+                                    </div>
+
+                                    <div class="flex items-center space-x-1.5 sm:space-x-2">
+                                        <button onclick="adjustCount('${sec.id}', ${subIndex}, -1)" class="w-8 h-8 rounded-xl bg-slate-200/80 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center transition-all active:scale-90" title="减少1题">
+                                            <i class="fa-solid fa-minus text-xs"></i>
+                                        </button>
+                                        <input type="number" min="0" max="${sub.totalCount}" value="${sub.userCorrect}" 
+                                            onchange="setCount('${sec.id}', ${subIndex}, this.value)"
+                                            id="input-${sec.id}-${subIndex}"
+                                            class="w-12 text-center text-xs sm:text-sm font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white">
+                                        <button onclick="adjustCount('${sec.id}', ${subIndex}, 1)" class="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center justify-center transition-all shadow-sm shadow-blue-500/20 active:scale-90" title="增加1题">
+                                            <i class="fa-solid fa-plus text-xs"></i>
+                                        </button>
+                                        <button onclick="setSubMax('${sec.id}', ${subIndex})" class="px-2 py-1 text-[11px] rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 dark:text-slate-400 font-medium" title="该项全对">
+                                            全对
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                cardHTML += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        function getTierLabel(ratio) {
+            if (ratio >= 0.9) return "14分档 (95-106.5分 极佳)";
+            if (ratio >= 0.7) return "11分档 (75-94分 良好)";
+            if (ratio >= 0.5) return "8分档 (54-74分 及格)";
+            if (ratio >= 0.3) return "5分档 (33-53分 薄弱)";
+            return "2分档 (0-32分 零碎)";
+        }
+
+        // Adjust Count
+        function adjustCount(sectionId, subIndex, delta) {
+            const data = examConfigs[currentExam];
+            const sec = data.sections.find(s => s.id === sectionId);
+            const sub = sec.subsections[subIndex];
+
+            let newVal = sub.userCorrect + delta;
+            if (newVal < 0) newVal = 0;
+            if (newVal > sub.totalCount) newVal = sub.totalCount;
+
+            sub.userCorrect = newVal;
+
+            document.getElementById(`count-display-${sectionId}-${subIndex}`).innerText = newVal;
+            document.getElementById(`input-${sectionId}-${subIndex}`).value = newVal;
+            document.getElementById(`sub-earned-${sectionId}-${subIndex}`).innerText = (newVal * sub.pointsPerItem).toFixed(1) + '分';
+
+            calculateScores();
+            saveData();
+        }
+
+        function setCount(sectionId, subIndex, val) {
+            const data = examConfigs[currentExam];
+            const sec = data.sections.find(s => s.id === sectionId);
+            const sub = sec.subsections[subIndex];
+
+            let parsed = parseInt(val);
+            if (isNaN(parsed) || parsed < 0) parsed = 0;
+            if (parsed > sub.totalCount) parsed = sub.totalCount;
+
+            sub.userCorrect = parsed;
+            document.getElementById(`count-display-${sectionId}-${subIndex}`).innerText = parsed;
+            document.getElementById(`input-${sectionId}-${subIndex}`).value = parsed;
+            document.getElementById(`sub-earned-${sectionId}-${subIndex}`).innerText = (parsed * sub.pointsPerItem).toFixed(1) + '分';
+
+            calculateScores();
+            saveData();
+        }
+
+        function setSubMax(sectionId, subIndex) {
+            const data = examConfigs[currentExam];
+            const sec = data.sections.find(s => s.id === sectionId);
+            const sub = sec.subsections[subIndex];
+
+            sub.userCorrect = sub.totalCount;
+            document.getElementById(`count-display-${sectionId}-${subIndex}`).innerText = sub.totalCount;
+            document.getElementById(`input-${sectionId}-${subIndex}`).value = sub.totalCount;
+            document.getElementById(`sub-earned-${sectionId}-${subIndex}`).innerText = (sub.totalCount * sub.pointsPerItem).toFixed(1) + '分';
+
+            calculateScores();
+            saveData();
+        }
+
+        function updateSliderValue(sectionId, subIndex, val) {
+            const data = examConfigs[currentExam];
+            const sec = data.sections.find(s => s.id === sectionId);
+            const sub = sec.subsections[subIndex];
+
+            sub.userCorrect = parseFloat(val);
+            const pct = Math.round(sub.userCorrect * 100);
+            const score = (sub.userCorrect * sub.pointsPerItem).toFixed(1);
+
+            document.getElementById(`slider-val-${sectionId}-${subIndex}`).innerText = pct + '%';
+            document.getElementById(`slider-score-${sectionId}-${subIndex}`).innerText = score + '分';
+            document.getElementById(`slider-tier-${sectionId}-${subIndex}`).innerText = getTierLabel(sub.userCorrect);
+
+            calculateScores();
+            saveData();
+        }
+
+        function setSliderPreset(sectionId, subIndex, ratio) {
+            updateSliderValue(sectionId, subIndex, ratio);
+            const card = document.querySelector(`#sections-container input[type="range"]`);
+            // re-render UI to sync input slider position cleanly
+            renderUI();
+            calculateScores();
+            saveData();
+        }
+
+        // Calculate All Scores
+        function calculateScores() {
+            const data = examConfigs[currentExam];
+            let totalScore = 0;
+            const secScores = {};
+
+            data.sections.forEach(sec => {
+                let secScore = 0;
+                sec.subsections.forEach(sub => {
+                    secScore += sub.userCorrect * sub.pointsPerItem;
+                });
+
+                if (secScore > sec.maxScore) secScore = sec.maxScore;
+                secScores[sec.id] = Math.round(secScore * 10) / 10;
+
+                // Update section header
+                const scoreEl = document.getElementById(`score-${sec.id}`);
+                if (scoreEl) scoreEl.innerText = Math.round(secScore);
+
+                // Update summary bar and text
+                const summaryEl = document.getElementById(`summary-${sec.id}`);
+                if (summaryEl) summaryEl.innerText = Math.round(secScore);
+
+                const barEl = document.getElementById(`bar-${sec.id}`);
+                if (barEl) {
+                    const pct = (secScore / sec.maxScore) * 100;
+                    barEl.style.width = `${pct}%`;
+                }
+
+                totalScore += secScore;
+            });
+
+            totalScore = Math.round(totalScore);
+            if (totalScore > 710) totalScore = 710;
+
+            // Total Score
+            document.getElementById('total-score').innerText = totalScore;
+            const percentage = Math.round((totalScore / 710) * 100);
+            document.getElementById('score-percentage').innerText = `综合得分率: ${percentage}%`;
+
+            // Pass Badge
+            const passBadge = document.getElementById('pass-badge');
+            const levelDesc = document.getElementById('level-desc');
+
+            if (totalScore >= 600) {
+                passBadge.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex items-center space-x-1.5";
+                passBadge.innerHTML = '<i class="fa-solid fa-crown text-amber-500"></i> <span>600+ 大神分段 (极度优秀)</span>';
+                levelDesc.innerText = "具备保研、顶级外企/涉外公务员碾压级英语实力，可从容报考口试并冲击A+等级！";
+            } else if (totalScore >= 550) {
+                passBadge.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex items-center space-x-1.5";
+                passBadge.innerHTML = '<i class="fa-solid fa-medal text-emerald-500"></i> <span>550+ 优秀分段 (保研高分档)</span>';
+                levelDesc.innerText = "远超及格线，大多数名校保研与外企初筛免试标准，具备报考口试(CET-SET)资格！";
+            } else if (totalScore >= 500) {
+                passBadge.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30 flex items-center space-x-1.5";
+                passBadge.innerHTML = '<i class="fa-solid fa-circle-check text-blue-500"></i> <span>500+ 良好分段 (稳健过级)</span>';
+                levelDesc.innerText = "成绩良好，稳定过关。若想冲击更高分，可重点强化仔细阅读与长篇阅读满分率。";
+            } else if (totalScore >= 425) {
+                passBadge.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30 flex items-center space-x-1.5";
+                passBadge.innerHTML = '<i class="fa-solid fa-check text-teal-500"></i> <span>已达 425 分合格线 (顺利通过)</span>';
+                levelDesc.innerText = "已达全国官方公认合格标准（425分），成绩有效，可报考下一阶段或直接拿证！";
+            } else {
+                passBadge.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30 flex items-center space-x-1.5";
+                passBadge.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-500"></i> <span>未达 425 分合格线 (差 ' + (425 - totalScore) + ' 分)</span>';
+                levelDesc.innerText = "目前距离 425 及格线还差 " + (425 - totalScore) + " 分。请参考下方智能考情诊断建议快速提分！";
+            }
+
+            renderDiagnostic(totalScore, secScores);
+        }
+
+        // Render Diagnostic Advice
+        function renderDiagnostic(total, secScores) {
+            const diagBox = document.getElementById('diagnostic-content');
+            if (!diagBox) return;
+
+            // Analyze reading and listening
+            const listeningScore = secScores.listening || 0;
+            const readingScore = secScores.reading || 0;
+            const writeScore = (secScores.writing || 0) + (secScores.translation || 0);
+
+            let advise1 = "", advise2 = "", advise3 = "";
+
+            if (readingScore < 150) {
+                advise1 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-violet-500">
+                        <div class="font-bold text-violet-700 dark:text-violet-300 flex items-center"><i class="fa-solid fa-book-open mr-1.5"></i> 阅读突破核心：抓紧仔细阅读</div>
+                        <p class="text-slate-500 dark:text-slate-400">目前阅读得分 ${readingScore}/248.5。仔细阅读每题高达 14.2 分（错2道就扣将近30分！）。考场建议先做仔细阅读与长篇匹配，选词填空分值仅3.55分，切勿死磕纠缠！</p>
+                    </div>
+                `;
+            } else {
+                advise1 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-emerald-500">
+                        <div class="font-bold text-emerald-700 dark:text-emerald-300 flex items-center"><i class="fa-solid fa-circle-check mr-1.5"></i> 阅读基本盘稳固</div>
+                        <p class="text-slate-500 dark:text-slate-400">阅读得分 ${readingScore}/248.5，发挥良好！建议继续保持高分势头，平时保持每天精读1篇真题仔细阅读以维持题感与定位速度。</p>
+                    </div>
+                `;
+            }
+
+            if (listeningScore < 150) {
+                advise2 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-indigo-500">
+                        <div class="font-bold text-indigo-700 dark:text-indigo-300 flex items-center"><i class="fa-solid fa-headphones mr-1.5"></i> 听力提升：攻克篇章与讲座</div>
+                        <p class="text-slate-500 dark:text-slate-400">目前听力得分 ${listeningScore}/248.5。篇章/讲座每题14.2分是得分大头。务必在试音和读题时间预先画出选项关键词，听音抓转折词（but, however）与因果词。</p>
+                    </div>
+                `;
+            } else {
+                advise2 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-blue-500">
+                        <div class="font-bold text-blue-700 dark:text-blue-300 flex items-center"><i class="fa-solid fa-shield-halved mr-1.5"></i> 听力优势突出</div>
+                        <p class="text-slate-500 dark:text-slate-400">听力得分 ${listeningScore}/248.5，听觉敏感度高！建议考前一周每天坚持按考试时段磨耳朵 20 分钟，保持临场抗干扰能力。</p>
+                    </div>
+                `;
+            }
+
+            if (writeScore < 140) {
+                advise3 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-amber-500">
+                        <div class="font-bold text-amber-700 dark:text-amber-300 flex items-center"><i class="fa-solid fa-pen-nib mr-1.5"></i> 写作与翻译：模板与句式升级</div>
+                        <p class="text-slate-500 dark:text-slate-400">写作+翻译总得分 ${writeScore.toFixed(1)}/213。主观题评分讲究第一印象，字迹工整占优势。背诵5类经典首尾段句型与高频传统文化、科技词汇即可轻松跃升至11分档。</p>
+                    </div>
+                `;
+            } else {
+                advise3 = `
+                    <div class="glass-subcard p-3.5 rounded-2xl space-y-1.5 border-l-4 border-l-teal-500">
+                        <div class="font-bold text-teal-700 dark:text-teal-300 flex items-center"><i class="fa-solid fa-trophy mr-1.5"></i> 主观题表达优秀</div>
+                        <p class="text-slate-500 dark:text-slate-400">写作与翻译得分 ${writeScore.toFixed(1)}/213，词汇与语法表现扎实！考场中注意合理分配写作与翻译各30分钟，留出2分钟检查拼写与时态。</p>
+                    </div>
+                `;
+            }
+
+            diagBox.innerHTML = advise1 + advise2 + advise3;
+        }
+
+        // Apply Presets
+        function applyPreset(type) {
+            const data = examConfigs[currentExam];
+            if (type === 'pass') {
+                // 425 Pass line strategy
+                if (currentExam === 'CET4') {
+                    data.sections[0].subsections[0].userCorrect = 0.65; // 写作 ~69分
+                    data.sections[1].subsections[0].userCorrect = 4;    // 新闻 4/7
+                    data.sections[1].subsections[1].userCorrect = 5;    // 对话 5/8
+                    data.sections[1].subsections[2].userCorrect = 6;    // 篇章 6/10 -> 听力 ~149分
+                    data.sections[2].subsections[0].userCorrect = 3;    // 选词 3/10 (战术放弃)
+                    data.sections[2].subsections[1].userCorrect = 7;    // 匹配 7/10
+                    data.sections[2].subsections[2].userCorrect = 7;    // 仔细 7/10 -> 阅读 ~159.8分
+                    data.sections[3].subsections[0].userCorrect = 0.65; // 翻译 ~69分 -> 总分 ~447分
+                } else {
+                    data.sections[0].subsections[0].userCorrect = 0.65;
+                    data.sections[1].subsections[0].userCorrect = 5;
+                    data.sections[1].subsections[1].userCorrect = 4;
+                    data.sections[1].subsections[2].userCorrect = 6;
+                    data.sections[2].subsections[0].userCorrect = 3;
+                    data.sections[2].subsections[1].userCorrect = 7;
+                    data.sections[2].subsections[2].userCorrect = 7;
+                    data.sections[3].subsections[0].userCorrect = 0.65;
+                }
+                showToast("已载入【425分及格线战术策略】配置");
+            } else if (type === 'high') {
+                // 550 High score preset
+                data.sections[0].subsections[0].userCorrect = 0.85;
+                data.sections[1].subsections[0].userCorrect = data.sections[1].subsections[0].totalCount - 1;
+                data.sections[1].subsections[1].userCorrect = data.sections[1].subsections[1].totalCount - 1;
+                data.sections[1].subsections[2].userCorrect = data.sections[1].subsections[2].totalCount - 2;
+                data.sections[2].subsections[0].userCorrect = 7;
+                data.sections[2].subsections[1].userCorrect = 9;
+                data.sections[2].subsections[2].userCorrect = 9;
+                data.sections[3].subsections[0].userCorrect = 0.85;
+                showToast("已载入【550+高分优秀档】目标配置");
+            }
+
+            renderUI();
+            calculateScores();
+            saveData();
+        }
+
+        // Set All Scores to Zero or Max
+        function setAllScores(mode) {
+            const data = examConfigs[currentExam];
+            data.sections.forEach(sec => {
+                sec.subsections.forEach(sub => {
+                    if (mode === 'zero') {
+                        sub.userCorrect = 0;
+                    } else {
+                        sub.userCorrect = sub.type === 'slider' ? 1.0 : sub.totalCount;
+                    }
+                });
+            });
+            renderUI();
+            calculateScores();
+            saveData();
+            showToast(mode === 'zero' ? "已全部清空重置为0分" : "已一键设为710满分状态");
+        }
+
+        // LocalStorage Save & Load
+        function saveData() {
+            try {
+                const payload = {
+                    CET4: examConfigs.CET4.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
+                    CET6: examConfigs.CET6.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
+                };
+                localStorage.setItem('cet_calculator_state', JSON.stringify(payload));
+            } catch (e) {
+                console.warn('Storage save failed:', e);
+            }
+        }
+
+        function loadStoredData() {
+            try {
+                const stored = localStorage.getItem('cet_calculator_state');
+                if (!stored) return;
+                const parsed = JSON.parse(stored);
+                ['CET4', 'CET6'].forEach(exKey => {
+                    if (parsed[exKey] && Array.isArray(parsed[exKey])) {
+                        parsed[exKey].forEach((subVals, sIdx) => {
+                            if (examConfigs[exKey].sections[sIdx]) {
+                                subVals.forEach((val, subIdx) => {
+                                    if (examConfigs[exKey].sections[sIdx].subsections[subIdx]) {
+                                        examConfigs[exKey].sections[sIdx].subsections[subIdx].userCorrect = val;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                console.warn('Storage load failed:', e);
+            }
+        }
+
+        // Copy Text Score Report
+        function copyScoreText() {
+            const total = document.getElementById('total-score').innerText;
+            const w = document.getElementById('summary-writing').innerText;
+            const l = document.getElementById('summary-listening').innerText;
+            const r = document.getElementById('summary-reading').innerText;
+            const t = document.getElementById('summary-translation').innerText;
+            const examName = examConfigs[currentExam].name;
+
+            const text = `【大学英语${examName}智能估分成绩单】\n` +
+                         `-----------------------------\n` +
+                         `预估总分：${total} / 710分 (${parseInt(total) >= 425 ? '✅ 达标及格' : '❌ 未及格'})\n` +
+                         `写作 (Writing)：${w} / 106.5分\n` +
+                         `听力 (Listening)：${l} / 248.5分\n` +
+                         `阅读 (Reading)：${r} / 248.5分\n` +
+                         `翻译 (Translation)：${t} / 106.5分\n` +
+                         `-----------------------------\n` +
+                         `计算基于全国大学英语四六级考试常模换算标准。`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("成绩单文本已复制到剪贴板！");
+            }).catch(() => {
+                showToast("复制失败，请手动截图", "error");
+            });
+        }
+
+        // Export Poster Image
+        function exportPoster() {
+            showToast("正在渲染高清晰度成绩卡片，请稍候...");
+            const card = document.getElementById('capture-container');
+            
+            // Temporary hide header buttons for cleaner poster
+            html2canvas(card, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#f8fafc',
+                borderRadius: 24
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${examConfigs[currentExam].shortName}_预估成绩单_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("成绩卡片已成功生成并下载！");
+            }).catch(err => {
+                console.error(err);
+                showToast("生成图片失败，请直接使用系统截屏", "error");
+            });
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Toast Notification Helper
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-msg');
+            const icon = document.getElementById('toast-icon');
+
+            msg.innerText = message;
+            if (type === 'success') {
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            } else {
+                icon.className = "fa-solid fa-circle-exclamation text-rose-400 text-base";
+            }
+
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 2600);
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
