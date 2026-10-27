@@ -270,9 +270,6 @@
                     <button onclick="exportPoster()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center">
                         <i class="fa-solid fa-camera mr-1.5"></i> 导出成绩卡
                     </button>
-                    <button onclick="copyScoreText()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all active:scale-95" title="复制文本成绩单">
-                        <i class="fa-regular fa-copy"></i>
-                    </button>
                 </div>
             </div>
         </section>
@@ -1288,32 +1285,6 @@
 
         function loadStoredData() {
             // 保持纯净 0 分初始状态
-        }
-
-        // Copy Text Score Report
-        function copyScoreText() {
-            const total = document.getElementById('total-score').innerText;
-            const w = document.getElementById('summary-writing').innerText;
-            const l = document.getElementById('summary-listening').innerText;
-            const r = document.getElementById('summary-reading').innerText;
-            const t = document.getElementById('summary-translation').innerText;
-            const examName = examConfigs[currentExam].name;
-
-            const text = `【大学英语${examName}智能估分成绩单】\n` +
-                         `-----------------------------\n` +
-                         `预估总分：${total} / 710分 (${parseInt(total) >= 425 ? '✅ 达标及格' : '❌ 未及格'})\n` +
-                         `写作 (Writing)：${w} / 106.5分\n` +
-                         `听力 (Listening)：${l} / 248.5分\n` +
-                         `阅读 (Reading)：${r} / 248.5分\n` +
-                         `翻译 (Translation)：${t} / 106.5分\n` +
-                         `-----------------------------\n` +
-                         `计算基于全国大学英语四六级考试常模换算标准。`;
-
-            navigator.clipboard.writeText(text).then(() => {
-                showToast("成绩单文本已复制到剪贴板！");
-            }).catch(() => {
-                showToast("复制失败，请手动截图", "error");
-            });
         }
 
         // Export Poster Image
