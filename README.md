@@ -120,7 +120,7 @@ $$TotSco = \left( \frac{X - \text{Mean}}{\text{SD}} \right) \times 70 + 500$$
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/cet-score-calculator.git
+git clone https://github.com/520luffy/cet-score-calculator.git
 
 # 进入目录
 cd cet-score-calculator
@@ -141,12 +141,12 @@ cd cet-score-calculator
    git add .
    git commit -m "feat: initial commit of cet score calculator"
    git branch -M main
-   git remote add origin https://github.com/your-username/your-repo.git
+   git remote add origin https://github.com/520luffy/cet-score-calculator.git
    git push -u origin main
    ```
 3. 在 GitHub 仓库设置中：进入 **Settings** &rarr; **Pages** &rarr; **Build and deployment** 下将 **Source** 选择为 **GitHub Actions**。
 4. 推送代码后工作流将自动部署，几秒钟后即可获得专属在线网站地址：
-   `https://<your-username>.github.io/<your-repo>/`
+   `https://520luffy.github.io/cet-score-calculator/`
 
 ---
 
