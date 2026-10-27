@@ -823,7 +823,7 @@
 
         // Initialize App
         function initApp() {
-            // Check stored theme
+            // Check stored theme only
             if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
                 updateThemeIcon(true);
@@ -832,13 +832,12 @@
                 updateThemeIcon(false);
             }
 
-            // Load saved state if exists
-            const savedExam = localStorage.getItem('cet_current_exam');
-            if (savedExam && examConfigs[savedExam]) {
-                currentExam = savedExam;
-            }
+            // 清理可能残留的历史算分缓存，确保每次刷新页面都完全以 0 分重新开始
+            try {
+                localStorage.removeItem('cet_calculator_state_v3');
+                localStorage.removeItem('cet_calculator_state');
+            } catch(e) {}
 
-            loadStoredData();
             renderUI();
             calculateScores();
         }
@@ -1282,42 +1281,13 @@
             showToast(mode === 'zero' ? "已全部清空重置为0分" : "已一键设为710满分状态");
         }
 
-        // LocalStorage Save & Load (v3 clean start)
-        const STORAGE_KEY = 'cet_calculator_state_v3';
-
+        // Session State (刷新页面即重置为0分，不进行持久化存储)
         function saveData() {
-            try {
-                const payload = {
-                    CET4: examConfigs.CET4.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
-                    CET6: examConfigs.CET6.sections.map(s => s.subsections.map(sub => sub.userCorrect)),
-                };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-            } catch (e) {
-                console.warn('Storage save failed:', e);
-            }
+            // 不保存做题状态，保持刷新页面时始终以 0 分全新开始
         }
 
         function loadStoredData() {
-            try {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (!stored) return;
-                const parsed = JSON.parse(stored);
-                ['CET4', 'CET6'].forEach(exKey => {
-                    if (parsed[exKey] && Array.isArray(parsed[exKey])) {
-                        parsed[exKey].forEach((subVals, sIdx) => {
-                            if (examConfigs[exKey].sections[sIdx]) {
-                                subVals.forEach((val, subIdx) => {
-                                    if (examConfigs[exKey].sections[sIdx].subsections[subIdx]) {
-                                        examConfigs[exKey].sections[sIdx].subsections[subIdx].userCorrect = val;
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            } catch (e) {
-                console.warn('Storage load failed:', e);
-            }
+            // 保持纯净 0 分初始状态
         }
 
         // Copy Text Score Report
